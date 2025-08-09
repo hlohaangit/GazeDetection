@@ -1,0 +1,81 @@
+{
+  "system": {
+    "fps": 30.0,
+    "frame_skip": 1,
+    "logging_level": "INFO"
+  },
+  "face_detection": {
+    "detection_confidence": 0.3,
+    "mesh_confidence": 0.3,
+    "model_selection": 1
+  },
+  "face_tracking": {
+    "iou_threshold": 0.3,
+    "max_frames_missing": 20,
+    "min_session_duration": 0.5
+  },
+  "pose_estimation": {
+    "estimator_type": "mediapipe",
+    "yaw_multiplier": 1.5,
+    "pitch_multiplier": 2.0
+  },
+  "zone_mapping": {
+    "mapper_type": "bakery",
+    "config_path": null
+  },
+  "visualization": {
+    "display_output": true,
+    "save_output": false,
+    "output_path": "output_processed.mp4"
+  },
+  "analytics": {
+    "console_output": true,
+    "database_output": true,
+    "json_output": true,
+    "db_path": "gaze_analytics.db",
+    "json_output_dir": "analytics_output",
+    "verbose": true
+  },
+  "zones": [
+    {
+      "name": "Left_sandwich_and_croissant_shelves",
+      "display_name": "PASTRY/SANDWICH",
+      "color": [255, 150, 100],
+      "category": "food_display",
+      "metadata": {
+        "products": ["sandwiches", "croissants", "pastries"],
+        "price_range": "$5-$15"
+      }
+    },
+    {
+      "name": "Cake_Display",
+      "display_name": "CAKES",
+      "color": [100, 255, 100],
+      "category": "food_display",
+      "metadata": {
+        "products": ["birthday cakes", "wedding cakes", "cupcakes"],
+        "price_range": "$20-$100"
+      }
+    },
+    {
+      "name": "Cookie_Shelves",
+      "display_name": "COOKIES",
+      "color": [100, 150, 255],
+      "category": "food_display",
+      "metadata": {
+        "products": ["chocolate chip", "sugar cookies", "macarons"],
+        "price_range": "$2-$10"
+      }
+    },
+    {
+      "name": "Right_sandwich_and_bread_shelves",
+      "display_name": "BREAD",
+      "color": [255, 100, 255],
+      "category": "food_display",
+      "metadata": {
+        "products": ["baguettes", "sourdough", "whole wheat"],
+        "price_range": "$3-$8"
+      }
+    }
+  ]
+} 

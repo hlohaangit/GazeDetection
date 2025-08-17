@@ -1,10 +1,6 @@
-# main.py
-"""
-Main application for gaze tracking system.
-"""
-
 import cv2
 import mediapipe as mp
+
 import numpy as np
 from typing import List, Optional, Dict, Any
 from pathlib import Path
@@ -19,7 +15,7 @@ from face_tracker.face_tracker import FaceTracker, FaceDetection, TrackedFace
 from head_pose_estimator.head_pose_estimator import HeadPoseEstimatorFactory, HeadPose
 from zone_mapper.zone_mapper import ZoneMapperFactory, GazeContext
 from analytics_writer.analytics_writer import (
-    ConsoleAnalyticsWriter, DatabaseAnalyticsWriter, JSONAnalyticsWriter,
+    ConsoleAnalyticsWriter, JSONAnalyticsWriter,
     CompositeAnalyticsWriter, AnalyticsProcessor, AggregateAnalytics
 )
 
@@ -33,8 +29,8 @@ class GazeTrackingSystem:
         
         # Initialize components
         self.face_tracker = FaceTracker(
-            iou_threshold=config.get('iou_threshold', 0.3),
-            max_frames_missing=config.get('max_frames_missing', 20),
+            iou_threshold=config.get('iou_threshold', 0.3), #fetches value from config dict, if not found uses default 0.3
+            max_frames_missing=config.get('max_frames_missing', 5),
             min_session_duration=config.get('min_session_duration', 0.5),
             fps=config.get('fps', 30.0)
         )
@@ -98,9 +94,7 @@ class GazeTrackingSystem:
             ))
         
         if config.get('database_output', False):
-            writers.append(DatabaseAnalyticsWriter(
-                db_path=config.get('db_path', 'gaze_analytics.db')
-            ))
+            print("Database output enabled")
         
         if config.get('json_output', False):
             writers.append(JSONAnalyticsWriter(
@@ -115,7 +109,7 @@ class GazeTrackingSystem:
         else:
             return CompositeAnalyticsWriter(writers)
     
-    def process_video(self, video_path: str) -> None:
+    def process_video(self, video_path: str) -> None: #calls _detect_faces and _visualize_frame and _finalize_tracking from GazeTrackingSystem
         """Process video file for gaze tracking."""
         self.logger.info(f"Processing video: {video_path}")
         
@@ -161,9 +155,16 @@ class GazeTrackingSystem:
                     
                     if self.display_output:
                         cv2.imshow("Gaze Tracking System", visualization)
-                        if cv2.waitKey(1) & 0xFF == ord('q'):
+                        key = cv2.waitKey(1) & 0xFF
+                        if key == ord('q'):
                             self.logger.info("User requested quit")
                             break
+                        elif key == ord('p'):
+                            self.logger.info("Playback paused. Press 'r' to resume.")
+                            while True:
+                                if cv2.waitKey(1) & 0xFF == ord('r'):
+                                    self.logger.info("Playback resumed.")
+                                    break
                     
                     if self.save_output and out:
                         out.write(visualization)
@@ -237,7 +238,7 @@ class GazeTrackingSystem:
         # Crop face region
         face_crop = frame[y_pad:y_pad+h_pad, x_pad:x_pad+w_pad]
         
-        if face_crop.size > 0 and face_crop.shape[0] > 20 and face_crop.shape[1] > 20:
+        if face_crop.size > 0 and face_crop.shape[0] > 20 and face_crop.shape[1] > 20: 
             # Apply FaceMesh
             mesh_results = self.face_mesh.process(face_crop)
             
@@ -305,17 +306,30 @@ class GazeTrackingSystem:
         
         return None
     
-    def _visualize_frame(self, frame: np.ndarray, frame_count: int) -> np.ndarray:
+    def _visualize_frame(self, frame: np.ndarray, frame_count: int) -> np.ndarray: #calls _draw_face, _draw_zone_boundaries, and _draw_status from GazeTrackingSystem
         """Visualize tracking results on frame."""
         vis_frame = frame.copy()
         frame_height, frame_width = frame.shape[:2]
         
         # Get active faces
         active_faces = self.face_tracker.get_active_faces()
+
         
-        # Draw each tracked face
+        # Draw each tracked face with and highlight zones
         for face_id, face_data in active_faces.items():
             self._draw_face(vis_frame, face_id, face_data, frame_count)
+            # draw zone boundaries
+            if face_data.current_zone:
+                zone = self.zone_mapper.get_zone_by_name(face_data.current_zone)
+                if zone and zone.bounds:
+                    x1, y1, x2, y2 = zone.bounds
+                    cv2.rectangle(vis_frame, (x1, y1), (x2, y2), zone.color, 2)
+                    cv2.putText(vis_frame, zone.display_name, 
+                                (x1 + 5, y1 + 20), 
+                                cv2.FONT_HERSHEY_SIMPLEX, 0.5, 
+                                (255, 255, 255), 1)
+            
+
         
         # Draw zone boundaries
         self._draw_zone_boundaries(vis_frame)
@@ -445,7 +459,7 @@ class GazeTrackingSystem:
         self.face_detection.close()
         self.face_mesh.close()
     
-    def process_live_camera(self, camera_id: int = 0) -> None:
+    def process_live_camera(self, camera_id: int = 0) -> None: #calls _detect_faces and _visualize_frame and _finalize_tracking from GazeTrackingSystem - update from face_tracker
         """Process live camera feed."""
         self.logger.info(f"Starting live camera processing (camera {camera_id})")
         
@@ -508,12 +522,12 @@ def load_config(config_path: Optional[str] = None) -> dict:
     """Load configuration from file or use defaults."""
     default_config = {
         'fps': 30.0,
-        'frame_skip': 1,
-        'iou_threshold': 0.3,
-        'max_frames_missing': 20,
+        'frame_skip': 1, 
+        'iou_threshold': 0.1,
+        'max_frames_missing': 5, 
         'min_session_duration': 0.5,
         'detection_confidence': 0.3,
-        'mesh_confidence': 0.3,
+        'mesh_confidence': 0.2,
         'pose_estimator': 'mediapipe',
         'zone_mapper': 'bakery',
         'display_output': True,
@@ -554,7 +568,7 @@ def validate_input(input_path: str) -> bool:
         return Path(input_path).exists() and Path(input_path).is_file()
 
 
-def main():
+def main(): #calls process_video or process_live_camera from GazeTrackingSystem
     """Main entry point."""
     parser = argparse.ArgumentParser(
         description='Gaze Tracking System - Track eye gaze patterns in physical spaces',
@@ -568,7 +582,7 @@ Examples:
         """
     )
     
-    parser.add_argument('input', help='Video file path or camera ID (0 for webcam)')
+    parser.add_argument('input', help='Video file path or camera ID (0 for webcam)', default='/Users/harlow/Downloads/Futures- Data Files/final solution /data/output.mp4', nargs='?')
     parser.add_argument('--config', help='Configuration file path')
     parser.add_argument('--output', help='Output video path')
     parser.add_argument('--no-display', action='store_true', 

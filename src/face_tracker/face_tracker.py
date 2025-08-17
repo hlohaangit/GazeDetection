@@ -12,7 +12,7 @@ class GazeRecord:
     zone: str
     yaw: float
     pitch: float
-    position: Tuple[int, int]
+    position: Tuple[int, int]  # x,y of face center
     confidence: float
     timestamp: Optional[float] = None
 
@@ -39,9 +39,9 @@ class TrackedFace:
     last_seen: int
     missing_frames: int = 0
     gaze_history: List[GazeRecord] = field(default_factory=list)
-    zone_durations: Dict[str, float] = field(default_factory=lambda: defaultdict(float))
+    zone_durations: Dict[str, float] = field(default_factory=lambda: defaultdict(float)) # zone -> total duration in seconds
     current_zone: str = "Unknown"
-    zone_start_frame: int = 0
+    zone_start_frame: int = 0 # frame when the current zone was first seen needed because of zone transitions
     confidence: float = 0.0
 
 
@@ -53,7 +53,7 @@ class TrackingSession:
     end_frame: int
     total_duration: float
     zone_durations: Dict[str, float]
-    gaze_history: List[GazeRecord]
+    gaze_history: List[GazeRecord] # Full gaze history during the session
     unique_zones_visited: List[str]
     avg_confidence: float
     total_zone_transitions: int = 0
@@ -78,6 +78,10 @@ class ITracker(ABC):
         """Get completed tracking sessions."""
         pass
 
+    def add_session_callback(self, callback):
+        """Add callback to be called when a session is completed."""
+        pass
+
 
 class FaceTracker(ITracker):
     """Track individual faces with unique IDs and gaze history."""
@@ -87,9 +91,9 @@ class FaceTracker(ITracker):
                  max_frames_missing: int = 20,
                  min_session_duration: float = 0.5,
                  fps: float = 30.0):
-        self.next_id = 0
-        self.active_faces: Dict[int, TrackedFace] = {}
-        self.completed_sessions: List[TrackingSession] = []
+        self.next_id = 0 # Next unique ID to assign
+        self.active_faces: Dict[int, TrackedFace] = {} # id -> TrackedFace
+        self.completed_sessions: List[TrackingSession] = [] 
         self.iou_threshold = iou_threshold
         self.max_frames_missing = max_frames_missing
         self.min_session_duration = min_session_duration
@@ -98,7 +102,7 @@ class FaceTracker(ITracker):
         
     def add_session_callback(self, callback):
         """Add callback to be called when a session is completed."""
-        self._session_callbacks.append(callback)
+        self._session_callbacks.append(callback) # function should accept a TrackingSession object
         
     def calculate_iou(self, box1: Tuple[int, int, int, int], 
                       box2: Tuple[int, int, int, int]) -> float:

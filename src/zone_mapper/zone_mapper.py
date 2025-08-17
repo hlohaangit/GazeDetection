@@ -27,8 +27,8 @@ class GazeContext:
     pitch_angle: float
     face_center_x: int
     face_center_y: int
-    frame_width: int
-    frame_height: int
+    frame_width: int # Width of the video frame
+    frame_height: int # Height of the video frame
     confidence: float = 1.0
 
 
@@ -77,6 +77,7 @@ class BakeryZoneMapper(IZoneMapper):
             Zone(
                 name="Cookie_Shelves",
                 display_name="COOKIES",
+                # bounds=(0, 0, 100, 100),  # Example bounds
                 color=(100, 150, 255),  # Blue
                 category="food_display"
             ),
@@ -149,7 +150,7 @@ class BakeryZoneMapper(IZoneMapper):
             ("right", "right"): "Right_sandwich_and_bread_shelves",
         }
         
-        return zone_mapping.get((position, direction), f"Unknown_{position}_{direction}")
+        return zone_mapping.get((position, direction), f"Unknown_{position}_{direction}") 
     
     # def _determine_center_forward_zone(self, context: GazeContext) -> str:
     #     """Determine zone when looking forward from center."""
@@ -247,6 +248,6 @@ class ZoneMapperFactory:
         if mapper_type == "bakery":
             return BakeryZoneMapper()
         elif mapper_type == "configurable" and config_path:
-            return ConfigurableZoneMapper(config_path)
+            print('need to implement zone mapper from config')
         else:
             raise ValueError(f"Unknown mapper type: {mapper_type} or missing config")

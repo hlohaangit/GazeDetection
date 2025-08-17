@@ -21,7 +21,7 @@ class HeadPose:
 @dataclass
 class FacialLandmarks:
     """Key facial landmarks for pose estimation."""
-    nose_tip: Tuple[int, int]
+    nose_tip: Tuple[int, int] # (x, y)
     chin: Tuple[int, int]
     left_eye_corner: Tuple[int, int]
     right_eye_corner: Tuple[int, int]
@@ -65,7 +65,7 @@ class MediaPipeHeadPoseEstimator(IHeadPoseEstimator):
         """Extract key facial landmarks from MediaPipe results."""
         h, w = image_shape[:2]
         
-        # Convert normalized coordinates to pixel coordinates
+        # Convert normalized coordinates to pixel coordinates. the landmarks are in [0,1] range and need to be scaled to image size.
         def to_pixel_coords(landmark):
             return (int(landmark.x * w), int(landmark.y * h))
         
@@ -150,6 +150,8 @@ class SimpleHeadPoseEstimator(IHeadPoseEstimator):
     def estimate_pose(self, landmarks: object, image_shape: Tuple[int, int]) -> HeadPose:
         """Provide default pose when detailed estimation is not available."""
         return HeadPose(yaw=0.0, pitch=0.0, roll=0.0, confidence=0.5)
+
+
 
 
 class HeadPoseEstimatorFactory:

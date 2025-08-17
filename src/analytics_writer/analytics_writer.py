@@ -72,6 +72,8 @@ class ConsoleAnalyticsWriter(IAnalyticsWriter):
         self.session_count = 0
     
     def write_session(self, session_data: Any) -> None:
+        print(len(session_data.zone_durations),"-- zome durations")
+        print(len(session_data.gaze_history),"-- gaze history")
         """Write session data to console."""
         self.session_count += 1
         
